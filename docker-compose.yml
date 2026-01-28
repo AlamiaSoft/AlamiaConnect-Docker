@@ -1,0 +1,61 @@
+version: "3.1"
+
+services:
+  ac-php-apache:
+    build:
+      args:
+        container_project_path: /var/www/html/
+        uid: 1000
+        user: alamia
+      context: .
+      dockerfile: ./Dockerfile
+    image: ac-php-apache
+    environment:
+      - BACKEND_REPO_URL=${BACKEND_REPO_URL:-https://github.com/your-username/AlamiaConnect-Backend.git}
+      - BACKEND_REPO_BRANCH=${BACKEND_REPO_BRANCH:-main}
+    ports:
+      - 80:80
+    volumes:
+      - ac-workspace:/var/www/html/
+
+  ac-mysql:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+    ports:
+      - 3306:3306
+    volumes:
+      - ac-mysql-data:/var/lib/mysql/
+
+  ac-redis:
+    image: redis:6.2-alpine
+    ports:
+      - 6379:6379
+    command: redis-server --save 20 1 --loglevel warning
+    volumes:
+      - ac-redis-data:/data
+
+  ac-phpmyadmin:
+    image: phpmyadmin:latest
+    environment:
+      PMA_HOST: ac-mysql
+      PMA_USER: root
+      PMA_PASSWORD: ${DB_PASSWORD:-root}
+      UPLOAD_LIMIT: 512M
+    ports:
+      - 8080:80
+
+  ac-mailhog:
+    image: mailhog/mailhog
+    logging:
+      driver: 'none'
+    ports:
+      - 1025:1025
+      - 8025:8025
+
+volumes:
+  ac-workspace:
+  ac-mysql-data:
+  ac-redis-data:
