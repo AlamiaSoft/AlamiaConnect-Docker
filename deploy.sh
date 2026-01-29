@@ -4,17 +4,18 @@
 
 set -e # Exit on error
 
-# --- Sanitize Inputs (Remove potential \r characters from Windows environments) ---
-CLIENT_NAME=$(echo "$1" | tr -d '\r')
-PORT=$(echo "$2" | tr -d '\r')
-BRANCH=$(echo "$3" | tr -d '\r')
+# --- Sanitize Inputs (Aggressive \r stripping) ---
+# This fixes issues when scripts are edited on Windows
+CLIENT_NAME=$(echo "$1" | sed 's/\r//g')
+PORT=$(echo "$2" | sed 's/\r//g')
+BRANCH=$(echo "$3" | sed 's/\r//g')
 BRANCH=${BRANCH:-main}
 
 # --- Configuration ---
 BASE_DEPLOY_PATH="/opt/alamiaconnect"
-# Get the directory where the script is located, ensuring absolute paths
+# Get the directory where the script is located
 SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-SRC_DIR=$(echo "$SRC_DIR" | tr -d '\r')
+SRC_DIR=$(echo "$SRC_DIR" | sed 's/\r//g')
 
 if [ -z "$CLIENT_NAME" ] || [ -z "$PORT" ]; then
     echo "❌ Usage: ./deploy.sh <client_name> <port> [branch]"
@@ -35,20 +36,13 @@ mkdir -p "$TARGET_DIR"
 
 # 2. Copy necessary files
 echo "📦 Copying Docker infrastructure..."
-REQUIRED_FILES=("Dockerfile" "docker-compose.yml" "entrypoint.sh")
-for file in "${REQUIRED_FILES[@]}"; do
-    if [ ! -f "$SRC_DIR/$file" ]; then
-        echo "❌ Error: $file not found in $SRC_DIR"
-        exit 1
-    fi
-    cp "$SRC_DIR/$file" "$TARGET_DIR/"
-done
+cp "$SRC_DIR/Dockerfile" "$TARGET_DIR/"
+cp "$SRC_DIR/docker-compose.yml" "$TARGET_DIR/"
+cp "$SRC_DIR/entrypoint.sh" "$TARGET_DIR/"
 
 # Copy .configs directory if it exists
 if [ -d "$SRC_DIR/.configs" ]; then
     cp -r "$SRC_DIR/.configs" "$TARGET_DIR/"
-else
-    echo "⚠️ Warning: .configs directory not found in $SRC_DIR. Initialization might fail."
 fi
 
 mkdir -p "$TARGET_DIR/workspace"
@@ -70,22 +64,20 @@ EOF
 echo "🚢 Starting Docker containers..."
 cd "$TARGET_DIR"
 
-# Debug: List files to ensure we are in the right place
-echo "🔍 Current Directory Contents:"
-ls -la
-
 # Use 'docker compose' (v2) if available, otherwise 'docker-compose' (v1)
-DOCKER_COMPOSE_CMD="docker-compose"
 if docker compose version >/dev/null 2>&1; then
-    DOCKER_COMPOSE_CMD="docker compose"
+    COMPOSE_CMD="docker compose"
+else
+    COMPOSE_CMD="docker-compose"
 fi
 
-echo "📡 Using command: $DOCKER_COMPOSE_CMD"
+echo "📡 Using command: $COMPOSE_CMD"
 
-# Explicitly use the file to avoid "not found" errors
-$DOCKER_COMPOSE_CMD -f "$TARGET_DIR/docker-compose.yml" down || true
-$DOCKER_COMPOSE_CMD -f "$TARGET_DIR/docker-compose.yml" up -d --build
+# IMPORTANT: Use relative paths for the -f flag to avoid variable-based path corruption
+# Also explicitly use -f to be certain
+$COMPOSE_CMD -f docker-compose.yml down || true
+$COMPOSE_CMD -f docker-compose.yml up -d --build
 
 echo "✅ Deployment for $CLIENT_NAME initiated!"
 echo "📡 Access via: http://your-vps-ip:$PORT"
-echo "📝 Log Trace: $DOCKER_COMPOSE_CMD -f $TARGET_DIR/docker-compose.yml logs -f app"
+echo "📝 Log Trace: $COMPOSE_CMD logs -f app"
