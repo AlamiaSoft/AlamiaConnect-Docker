@@ -11,13 +11,15 @@ BRANCH=$(echo "$3" | tr -d '\r' | xargs)
 BRANCH=${BRANCH:-main}
 
 # --- Configuration ---
-# NOTE: If you are using Docker installed via Snap, it may have trouble accessing /opt/.
-# If this script fails with a "void" error, consider changing BASE_DEPLOY_PATH to /home/alamiaconnect/
-BASE_DEPLOY_PATH="/opt/alamiaconnect"
-
 # Get the directory where the script is located
 SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 SRC_DIR=$(echo "$SRC_DIR" | tr -d '\r' | xargs)
+
+# THE FIX: Make the base path dynamic!
+# We use the parent directory of where the script lives as the base.
+# Example: If script is in /home/alamiaconnect/AlamiaConnect-Docker, 
+# then BASE_DEPLOY_PATH becomes /home/alamiaconnect
+BASE_DEPLOY_PATH="$(dirname "$SRC_DIR")"
 
 if [ -z "$CLIENT_NAME" ] || [ -z "$PORT" ]; then
     echo "❌ Usage: ./deploy.sh <client_name> <port> [branch]"
@@ -72,20 +74,16 @@ else
 fi
 
 # Detect if we are in a Snap environment
-IS_SNAP=false
-if [[ "$COMPOSE_CMD" == *"snap"* ]] || command -v snap >/dev/null && snap list docker >/dev/null 2>&1; then
-    IS_SNAP=true
+if command -v snap >/dev/null && snap list docker >/dev/null 2>&1; then
     echo "⚠️ Snap-based Docker detected."
 fi
 
 # THE FIX: Use absolute paths and the --project-directory flag
 # This helps Snap-confined Docker processes resolve the path correctly.
-# We run it from the target directory to ensure .env is picked up.
 cd "$TARGET_DIR"
 
-echo "📡 Executing: $COMPOSE_CMD -f $TARGET_DIR/docker-compose.yml up -d"
+echo "📡 Executing: $COMPOSE_CMD -f "$TARGET_DIR/docker-compose.yml" --project-directory "$TARGET_DIR" up -d"
 
-# We use -f with absolute path AND --project-directory for maximum compatibility
 $COMPOSE_CMD -f "$TARGET_DIR/docker-compose.yml" --project-directory "$TARGET_DIR" down || true
 $COMPOSE_CMD -f "$TARGET_DIR/docker-compose.yml" --project-directory "$TARGET_DIR" up -d --build
 
