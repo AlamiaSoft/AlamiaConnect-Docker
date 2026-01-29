@@ -15,6 +15,9 @@ services:
       - BACKEND_REPO_URL=${BACKEND_REPO_URL}
       - BACKEND_REPO_BRANCH=${BACKEND_REPO_BRANCH:-main}
       - APP_ENV=${APP_ENV:-production}
+      - DB_HOST=db
+      - DB_DATABASE=alamiaconnect
+      - DB_PASSWORD=${DB_PASSWORD:-root}
     ports:
       - ${APP_PORT:-9001}:80
     volumes:

@@ -17,6 +17,9 @@ if [ ! -d "$WORKSPACE_DIR" ]; then
 fi
 
 # 2. Initialize/Update repository
+# Fix for "dubious ownership" in newer Git versions
+git config --global --add safe.directory "$WORKSPACE_DIR"
+
 if [ ! -d "$WORKSPACE_DIR/.git" ]; then
     echo "Cloning backend repository from $REPO_URL ($REPO_BRANCH)..."
     git clone -b "$REPO_BRANCH" "$REPO_URL" "$WORKSPACE_DIR"
@@ -26,13 +29,25 @@ else
 fi
 
 # 3. Handle Environment Config
-# Check if external config exists, otherwise use example
 if [ -f "/var/www/html/.configs/.env" ]; then
     echo "Using environment config from .configs/.env"
     cp "/var/www/html/.configs/.env" "$WORKSPACE_DIR/.env"
 elif [ ! -f "$WORKSPACE_DIR/.env" ]; then
     echo "No .env found, copying from .env.example"
     cp "$WORKSPACE_DIR/.env.example" "$WORKSPACE_DIR/.env"
+fi
+
+# Inject dynamic DB credentials from environment variables if they are set
+# This ensures the random password from deploy.sh reaches Laravel
+if [ ! -z "$DB_PASSWORD" ]; then
+    echo "Syncing DB_PASSWORD from environment..."
+    sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD/" "$WORKSPACE_DIR/.env"
+fi
+if [ ! -z "$DB_HOST" ]; then
+    sed -i "s/^DB_HOST=.*/DB_HOST=$DB_HOST/" "$WORKSPACE_DIR/.env"
+fi
+if [ ! -z "$DB_DATABASE" ]; then
+    sed -i "s/^DB_DATABASE=.*/DB_DATABASE=$DB_DATABASE/" "$WORKSPACE_DIR/.env"
 fi
 
 # 4. Link storage and set permissions before complex operations
