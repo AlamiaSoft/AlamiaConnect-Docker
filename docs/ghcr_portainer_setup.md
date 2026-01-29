@@ -40,15 +40,15 @@ To allow Portainer (and the VPS) to pull your images from GHCR, you need to add 
 
 ---
 
-## 3. Deploying via Portainer Stacks (Optional)
+## 4. CLI vs Portainer UI: How they work together
 
-While the `deploy.sh` script is the recommended way to manage the multi-tenant folders, you can also deploy directly via Portainer Stacks:
+It is important to understand that **Portainer is a mirror of your Docker engine**.
 
-1. Go to **Stacks** > **Add stack**.
-2. **Build method**: Repository or Web editor.
-3. Paste the contents of your `docker-compose.yml`.
-4. Define the Environment Variables (like `APP_PORT`, `PROJECT_NAME`) in the Portainer UI under **Environment variables**.
-5. Portainer will use the credentials added in Step B to pull the image automatically.
+- **Option A (The Script Way)**: When you run `./deploy.sh` on the CLI, it uses `docker-compose`. Portainer will **automatically detect** these containers. They will appear under the **Stacks** or **Containers** menu in the Portainer UI without you doing anything.
+- **Option B (The Portainer Way)**: If you prefer to use Portainer's web interface to click "Deploy", you should use the **Stacks** feature and point it to your GitHub repo.
+
+> [!TIP]
+> **Use the Script (`deploy.sh`)** for the initial setup. It's faster and handles the complex folder/branch logic. Use **Portainer** for monitoring, checking logs, and restarting containers via the web UI.
 
 ---
 
