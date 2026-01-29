@@ -6,7 +6,7 @@ set -e
 WORKSPACE_DIR="/var/www/html/alamiaconnect"
 REPO_URL=${BACKEND_REPO_URL}
 REPO_BRANCH=${BACKEND_REPO_BRANCH:-main}
-APP_USER=${USER:-alamiaconnect}
+APP_USER=${USER_NAME:-alamia}
 
 echo "Starting AlamiaConnect entrypoint logic..."
 

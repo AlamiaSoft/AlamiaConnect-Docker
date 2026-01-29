@@ -38,7 +38,7 @@ RUN npm install -g laravel-echo-server
 # arguments
 ARG container_project_path=/var/www/html/
 ARG uid=1000
-ARG user=alamiaconnect
+ARG user=alamia
 
 # setting work directory
 WORKDIR $container_project_path
