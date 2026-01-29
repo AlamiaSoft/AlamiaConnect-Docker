@@ -11,7 +11,7 @@ on:
 env:
   REGISTRY: ghcr.io
   # GHCR requires lowercase image names
-  IMAGE_NAME: ${{ github.repository_owner }}/ac-php-apache
+  IMAGE_NAME: ${{ github.repository_owner }}/alamia-connect-docker
 
 jobs:
   build-and-push:
@@ -26,7 +26,7 @@ jobs:
 
       - name: Set Image Name to Lowercase
         run: |
-          IMAGE_LOWER=$(echo "${{ github.repository_owner }}/ac-php-apache" | tr '[:upper:]' '[:lower:]')
+          IMAGE_LOWER=$(echo "${{ github.repository_owner }}/alamia-connect-docker" | tr '[:upper:]' '[:lower:]')
           echo "IMAGE_NAME_LOWER=$IMAGE_LOWER" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
