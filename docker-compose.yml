@@ -10,8 +10,8 @@ services:
       context: .
       dockerfile: ./Dockerfile
     image: alamiaconnect-php-apache
-    ports:
-      - 8081:80
+    # ports:
+    #   - 8081:80
     volumes:
       - ./workspace/:/var/www/html/
 
@@ -41,15 +41,15 @@ services:
       PMA_USER: root
       PMA_PASSWORD: root
       UPLOAD_LIMIT: 512M
-    ports:
-      - 8080:80
+    # ports:
+    #   - 8080:80
 
   alamiaconnect-mailhog:
     image: mailhog/mailhog
     logging:
       # Disable saving logs.
       driver: 'none'
-    ports:
-      # SMTP server.
-      - 1025:1025
-      - 8025:8025
+    # ports:
+    #   # SMTP server.
+    #   - 1025:1025
+    #   - 8025:8025
