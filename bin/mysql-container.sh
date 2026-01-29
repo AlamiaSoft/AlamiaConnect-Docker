@@ -1,3 +1,4 @@
-CONTAINER_ID=$(docker ps -aqf "name=ac-mysql")
+# container id
+CONTAINER_ID=$(docker ps -aqf "name=alamiaconnect-mysql")
 
 docker exec -it ${CONTAINER_ID} bash

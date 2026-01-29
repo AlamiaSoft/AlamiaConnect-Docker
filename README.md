@@ -1,54 +1,79 @@
-# AlamiaConnect Dockerization
+# <img src="assets/logo.png" width="400" alt="AlamiaConnect Logo">
+
+# AlamiaConnect Docker
 
 ## Introduction
 
-[AlamiaConnect](https://alamiaconnect.com) is a hand-tailored CRM framework built on [Krayin CRM](https://krayincrm.com), leveraging [Laravel](https://laravel.com) and [Next.js](https://nextjs.org).
+**AlamiaConnect** is a premium, hand-tailored CRM framework designed for modern businesses. Built on top of industry-leading open-source technologies like [Laravel](https://laravel.com) and [Vue.js](https://vuejs.org), it provides a robust foundation for customer lifecycle management.
 
-**Free & Opensource CRM solution for complete customer lifecycle management.**
+**Empower your SME or Enterprise with a complete, open-source CRM solution.**
 
-## Docker Architecture
+---
 
-This repository handles the backend Dockerization (Admin Panel + REST APIs). The frontend is typically deployed separately (e.g., Cloudflare Pages).
+### Features
 
-The architecture includes:
-- **PHP 8.4 + Apache**: The core Laravel application.
-- **MySQL 8.0**: Persistent database storage.
-- **Redis 6.2**: For caching and queues.
-- **PHPMyAdmin**: Database management interface.
-- **Mailhog**: Local SMTP testing.
+*   **Customer Lifecycle Management**: Seamlessly manage leads, customers, and opportunities.
+*   **Dockerized Environment**: Quick and consistent deployment using Docker.
+*   **Highly Extensible**: Modular architecture allows for easy customization.
+*   **Modern Tech Stack**: Laravel 11+, PHP 8.3, Vue.js, and MySQL.
 
-## Deployment (VPS / Portainer)
+---
 
-1. Set the following environment variables in your Portainer stack or `.env` file:
-   - `BACKEND_REPO_URL`: The Git URL of your AlamiaConnect-Backend.
-   - `BACKEND_REPO_BRANCH`: The branch to deploy (defaults to `main`).
-   - `DB_PASSWORD`: Root password for MySQL (defaults to `root`).
-   - `ALAMIA_ADMIN_NAME`: Initial admin name.
-   - `ALAMIA_ADMIN_EMAIL`: Initial admin email.
-   - `ALAMIA_ADMIN_PASSWORD`: Initial admin password.
+### Prerequisites
 
-2. Deploy the stack using the `docker-compose.yml`.
+*   **Docker** & **Docker Compose** installed on your system.
+*   **Git** for cloning the repository.
 
-3. The `entrypoint.sh` will automatically:
-   - Clone/Pull the repository.
-   - Install Composer and NPM dependencies.
-   - Build Vite assets for all packages.
-   - Run the specialized `alamia:install-docker` command.
+---
 
-## Local Test
+### Installation
 
-If you have Docker Desktop, you can test locally by running:
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/alamiaconnect/docker-setup.git
+    cd docker-setup
+    ```
 
-```sh
-docker-compose up -d
-```
+2.  **Run the setup script**:
+    The setup script handles container creation, database initialization, and application setup.
+    ```bash
+    sh setup.sh
+    ```
 
-## After Installation
+---
 
-- **Admin Panel**: `http://localhost/admin/login`
-- **PHPMyAdmin**: `http://localhost:8080`
-- **Mailhog**: `http://localhost:8025`
+### Service Configuration
 
-Default Admin Credentials:
-- **Email**: admin@alamiaconnect.com
-- **Password**: admin123
+The setup uses `docker-compose.yml` to orchestrate several services:
+
+- **AlamiaConnect App**: PHP 8.3 & Apache
+- **Database**: MySQL 8.0
+- **Cache**: Redis 6.2
+- **Email Testing**: MailHog
+- **Database Management**: phpMyAdmin
+
+| Service | Local Port |
+| :--- | :--- |
+| Web Application | [http://localhost](http://localhost) |
+| phpMyAdmin | [http://localhost:8080](http://localhost:8080) |
+| MailHog | [http://localhost:8025](http://localhost:8025) |
+
+---
+
+### After Installation
+
+Log in to the admin panel using the default credentials:
+
+*   **URL**: `http://localhost/admin/login`
+*   **Email**: `admin@example.com`
+*   **Password**: `admin123`
+
+---
+
+### Support
+
+For support and documentation, please visit our official channels or reach out via our support portal.
+
+---
+© 2026 AlamiaConnect. All rights reserved.
+
