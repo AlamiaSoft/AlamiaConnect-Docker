@@ -58,5 +58,12 @@ RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 RUN chmod -R 775 $container_project_path
 RUN chown -R $user:www-data $container_project_path
 
-# changing user
-USER $user
+# Add entrypoint script
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Set entrypoint
+ENTRYPOINT ["entrypoint.sh"]
+
+# default command
+CMD ["apache2-foreground"]
