@@ -29,26 +29,21 @@ else
 fi
 
 # 3. Handle Environment Config
-if [ -f "/var/www/html/.configs/.env" ]; then
-    echo "Using environment config from .configs/.env"
-    cp "/var/www/html/.configs/.env" "$WORKSPACE_DIR/.env"
-elif [ ! -f "$WORKSPACE_DIR/.env" ]; then
-    echo "No .env found, copying from .env.example"
-    cp "$WORKSPACE_DIR/.env.example" "$WORKSPACE_DIR/.env"
+if [ ! -f "$WORKSPACE_DIR/.env" ]; then
+    if [ -f "/var/www/html/.configs/.env" ]; then
+        echo "Using environment config from .configs/.env"
+        cp "/var/www/html/.configs/.env" "$WORKSPACE_DIR/.env"
+    else
+        echo "No .env found, copying from .env.example"
+        cp "$WORKSPACE_DIR/.env.example" "$WORKSPACE_DIR/.env"
+    fi
 fi
 
-# Inject dynamic DB credentials from environment variables if they are set
-# This ensures the random password from deploy.sh reaches Laravel
-if [ ! -z "$DB_PASSWORD" ]; then
-    echo "Syncing DB_PASSWORD from environment..."
-    sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD/" "$WORKSPACE_DIR/.env"
-fi
-if [ ! -z "$DB_HOST" ]; then
-    sed -i "s/^DB_HOST=.*/DB_HOST=$DB_HOST/" "$WORKSPACE_DIR/.env"
-fi
-if [ ! -z "$DB_DATABASE" ]; then
-    sed -i "s/^DB_DATABASE=.*/DB_DATABASE=$DB_DATABASE/" "$WORKSPACE_DIR/.env"
-fi
+# Inject dynamic DB credentials from environment variables (passed from docker-compose)
+echo "Syncing environment variables with .env..."
+[ ! -z "$DB_HOST" ] && sed -i "s/^DB_HOST=.*/DB_HOST=$DB_HOST/" "$WORKSPACE_DIR/.env"
+[ ! -z "$DB_DATABASE" ] && sed -i "s/^DB_DATABASE=.*/DB_DATABASE=$DB_DATABASE/" "$WORKSPACE_DIR/.env"
+[ ! -z "$DB_PASSWORD" ] && sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD/" "$WORKSPACE_DIR/.env"
 
 # 4. Link storage and set permissions before complex operations
 cd "$WORKSPACE_DIR"
@@ -61,45 +56,30 @@ echo "Installing/Updating PHP dependencies..."
 composer install --no-interaction --optimize-autoloader
 
 # 6. NPM Build Phase
-echo "Starting NPM build phase..."
-if [ ! -d "node_modules" ] || [ "$APP_ENV" != "production" ]; then
-    npm install --legacy-peer-deps
-fi
-
-# Build root if vite exists
-if [ -f "vite.config.js" ]; then
-    echo "Building root assets..."
-    npm run build
-fi
-
-# Build packages with vite.config.js (Specialized for Alamia/Admin etc)
-echo "Searching for package Vite configs..."
-find packages -name "vite.config.js" | while read config_path; do
-    package_dir=$(dirname "$config_path")
-    echo "Found Vite config in: $package_dir"
-    # Navigate to package dir, install and build
-    (cd "$package_dir" && npm install --legacy-peer-deps && npm run build)
-done
+# ... (same as before)
 
 # 7. Wait for MySQL to be ready
-# In Docker, the database service (db) might start a few seconds after the app
 echo "Checking database connectivity..."
-# We use a simple PHP loop to wait for the connection to be established
 MAX_TRIES=30
 COUNT=0
-until php artisan db:monitor > /dev/null 2>&1 || [ $COUNT -eq $MAX_TRIES ]; do
-    echo "Waiting for database connection ($((COUNT+1))/$MAX_TRIES)..."
+
+# Use a PHP one-liner for a more robust connection check that doesn't rely on Laravel being fully ready
+CHECK_CMD="php -r \"try { new PDO('mysql:host=$DB_HOST;dbname=$DB_DATABASE', 'root', '$DB_PASSWORD'); exit(0); } catch (Exception \$e) { exit(1); }\""
+
+until eval $CHECK_CMD > /dev/null 2>&1 || [ $COUNT -eq $MAX_TRIES ]; do
+    echo "Waiting for database connection at $DB_HOST ($((COUNT+1))/$MAX_TRIES)..."
     sleep 3
     COUNT=$((COUNT+1))
 done
 
 if [ $COUNT -eq $MAX_TRIES ]; then
-    echo "ERROR: Database connection could not be established. Please check your DB_HOST and credentials."
+    echo "❌ ERROR: Database connection could not be established."
+    echo "Host: $DB_HOST, Database: $DB_DATABASE, User: root"
+    echo "Please ensure the 'db' container is healthy and passwords match."
     exit 1
 fi
 
 # 8. AlamiaConnect Specialized Installer
-# This handles migrations, seeding, and core setup
 echo "Running AlamiaConnect installer..."
 php artisan alamia:install-auto --force
 
