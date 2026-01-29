@@ -1,20 +1,17 @@
 #!/bin/bash
 set -e
 
-# Configuration
-# These can be overridden via environment variables
+# --- Configuration ---
 WORKSPACE_DIR="/var/www/html/alamiaconnect"
-REPO_URL=${BACKEND_REPO_URL}
-REPO_BRANCH=${BACKEND_REPO_BRANCH:-main}
 APP_USER=${USER_NAME:-alamia}
+REPO_URL=${BACKEND_REPO_URL:-https://github.com/AlamiaSoft/AlamiaConnect-Backend}
+REPO_BRANCH=${BACKEND_REPO_BRANCH:-main}
 
 echo "Starting AlamiaConnect entrypoint logic..."
 
-# 1. Ensure workspace directory exists and is owned by the user
-if [ ! -d "$WORKSPACE_DIR" ]; then
-    echo "Creating workspace directory: $WORKSPACE_DIR"
-    mkdir -p "$WORKSPACE_DIR"
-fi
+# 1. Standardize Ownership
+# Ensure workspace exists
+mkdir -p "$WORKSPACE_DIR"
 
 # 2. Initialize/Update repository
 # Fix for "dubious ownership" in newer Git versions
@@ -39,31 +36,55 @@ if [ ! -f "$WORKSPACE_DIR/.env" ]; then
     fi
 fi
 
-# Inject dynamic DB credentials from environment variables (passed from docker-compose)
+# Inject dynamic DB credentials and APP settings from environment variables
 echo "Syncing environment variables with .env..."
 [ ! -z "$DB_HOST" ] && sed -i "s/^DB_HOST=.*/DB_HOST=$DB_HOST/" "$WORKSPACE_DIR/.env"
 [ ! -z "$DB_DATABASE" ] && sed -i "s/^DB_DATABASE=.*/DB_DATABASE=$DB_DATABASE/" "$WORKSPACE_DIR/.env"
 [ ! -z "$DB_PASSWORD" ] && sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD/" "$WORKSPACE_DIR/.env"
+[ ! -z "$APP_URL" ] && sed -i "s|^APP_URL=.*|APP_URL=$APP_URL|" "$WORKSPACE_DIR/.env"
+[ ! -z "$APP_ENV" ] && sed -i "s/^APP_ENV=.*/APP_ENV=$APP_ENV/" "$WORKSPACE_DIR/.env"
+[ ! -z "$APP_DEBUG" ] && sed -i "s/^APP_DEBUG=.*/APP_DEBUG=$APP_DEBUG/" "$WORKSPACE_DIR/.env"
 
-# 4. Link storage and set permissions before complex operations
+# Logic for "Local Network" prompt fix:
+# Often triggered by Echo server Defaults. Force to log if unset to prevent broadcast discovery triggers.
+sed -i "s/^BROADCAST_DRIVER=.*/BROADCAST_DRIVER=log/" "$WORKSPACE_DIR/.env"
+
+# 4. Link storage and set permissions
 cd "$WORKSPACE_DIR"
-echo "Setting initial permissions..."
+echo "Refining permissions..."
 chown -R $APP_USER:www-data "$WORKSPACE_DIR"
-chmod -R 775 storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 
 # 5. PHP Dependencies
-echo "Installing/Updating PHP dependencies..."
+echo "Ensuring PHP dependencies are optimized..."
 composer install --no-interaction --optimize-autoloader
 
-# 6. NPM Build Phase
-# ... (same as before)
+# 6. NPM Build Phase & Asset Refresh
+echo "Starting NPM build phase..."
+npm install --legacy-peer-deps
 
-# 7. Wait for MySQL to be ready
+# Build root if vite exists
+if [ -f "vite.config.js" ]; then
+    echo "Building root assets..."
+    npm run build
+fi
+
+# Build packages with vite.config.js (Specialized for Alamia/Admin etc)
+find packages -name "vite.config.js" | while read config_path; do
+    package_dir=$(dirname "$config_path")
+    echo "Found Vite config in: $package_dir"
+    (cd "$package_dir" && npm install --legacy-peer-deps && npm run build)
+done
+
+# 7. Robust Storage Link
+echo "Repairing storage symlinks..."
+rm -rf public/storage
+php artisan storage:link
+
+# 8. Wait for MySQL to be ready
 echo "Checking database connectivity..."
 MAX_TRIES=30
 COUNT=0
-
-# Use a PHP one-liner for a more robust connection check that doesn't rely on Laravel being fully ready
 CHECK_CMD="php -r \"try { new PDO('mysql:host=$DB_HOST;dbname=$DB_DATABASE', 'root', '$DB_PASSWORD'); exit(0); } catch (Exception \$e) { exit(1); }\""
 
 until eval $CHECK_CMD > /dev/null 2>&1 || [ $COUNT -eq $MAX_TRIES ]; do
@@ -74,20 +95,23 @@ done
 
 if [ $COUNT -eq $MAX_TRIES ]; then
     echo "❌ ERROR: Database connection could not be established."
-    echo "Host: $DB_HOST, Database: $DB_DATABASE, User: root"
-    echo "Please ensure the 'db' container is healthy and passwords match."
     exit 1
 fi
 
-# 8. AlamiaConnect Specialized Installer
-echo "Running AlamiaConnect installer..."
+# 9. AlamiaConnect Specialized Installer & Cache Clear
+echo "Running AlamiaConnect specialized installer..."
 php artisan alamia:install-auto --force
 
-# 8. Final Clean up and Optimization
-echo "Optimizing..."
-php artisan storage:link || true
+echo "Clearing application cache and optimizing branding..."
+php artisan view:clear
+php artisan cache:clear
+php artisan route:clear
+php artisan config:clear
 php artisan optimize:clear
-php artisan vendor:publish --provider="Webkul\Core\Providers\CoreServiceProvider" --force || true
 
-echo "AlamiaConnect is ready! Booting up Apache..."
+# 10. Final Ownership check
+chown -R $APP_USER:www-data storage bootstrap/cache public/storage
+
+echo "✅ Entrypoint logic completed!"
+
 exec "$@"
