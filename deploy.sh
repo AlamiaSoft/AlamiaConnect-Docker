@@ -9,12 +9,14 @@ CLIENT_NAME=$(echo "$1" | tr -d '\r' | xargs | tr '[:upper:]' '[:lower:]')
 PORT=$(echo "$2" | tr -d '\r' | xargs)
 BRANCH=$(echo "$3" | tr -d '\r' | xargs)
 DOMAIN_NAME=$(echo "$4" | tr -d '\r' | xargs)
+PMA_PORT_OVERRIDE=$(echo "$5" | tr -d '\r' | xargs)
 
 BRANCH=${BRANCH:-main}
 
 if [ -z "$CLIENT_NAME" ] || [ -z "$PORT" ] || [ -z "$DOMAIN_NAME" ]; then
-    echo "❌ Usage: ./deploy.sh <client_name> <port> <branch> <domain_name>"
+    echo "❌ Usage: ./deploy.sh <client_name> <port> <branch> <domain_name> [pma_port]"
     echo "   Example: ./deploy.sh demo 9000 main crmdemo.alamiaconnect.com"
+    echo "   (This sets App Port to 9000 and phpMyAdmin Port to 9010)"
     exit 1
 fi
 
@@ -67,7 +69,7 @@ echo "⚙️ Updating stack .env file..."
 cat <<EOF > "$TARGET_DIR/.env"
 PROJECT_NAME=alamia-$CLIENT_NAME
 APP_PORT=$PORT
-PMA_PORT=$((PORT - 921))
+PMA_PORT=${PMA_PORT_OVERRIDE:-$((PORT + 10))}
 DB_PASSWORD=$DB_PASSWORD
 BACKEND_REPO_URL=https://github.com/AlamiaSoft/AlamiaConnect-Backend
 BACKEND_REPO_BRANCH=$BRANCH
