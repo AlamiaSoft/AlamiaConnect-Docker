@@ -98,9 +98,11 @@ if [ $COUNT -eq $MAX_TRIES ]; then
     exit 1
 fi
 
-# 9. AlamiaConnect Specialized Installer & Cache Clear
 echo "Running AlamiaConnect specialized installer..."
 php artisan alamia:install-auto --force
+
+echo "Regenerating API Documentation..."
+php artisan l5-swagger:generate
 
 echo "Clearing application cache and optimizing branding..."
 php artisan view:clear
