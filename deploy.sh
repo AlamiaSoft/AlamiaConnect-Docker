@@ -15,20 +15,23 @@ BRANCH=${BRANCH:-main}
 
 if [ -z "$CLIENT_NAME" ] || [ -z "$PORT" ] || [ -z "$DOMAIN_NAME" ]; then
     echo "❌ Usage: ./deploy.sh <client_name> <port> <branch> <domain_name> [pma_port]"
-    echo "   Example: ./deploy.sh demo 9000 main crmdemo.alamiaconnect.com"
-    echo "   (This sets App Port to 9000 and phpMyAdmin Port to 9010)"
+    echo "   Example: ./deploy.sh ktd/demo 9000 main crmdemo.alamiaconnect.com"
+    echo "   (This creates clients/ktd/demo and sets App Port to 9000)"
     exit 1
 fi
 
 # --- Configuration ---
 SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 SRC_DIR=$(echo "$SRC_DIR" | tr -d '\r' | xargs)
-BASE_DEPLOY_PATH="$(dirname "$SRC_DIR")"
+BASE_PATH="$(dirname "$SRC_DIR")"
 
-TARGET_DIR="$BASE_DEPLOY_PATH/$CLIENT_NAME"
+# Centralize all deployments into a 'clients' folder in the parent directory
+DEPLOY_ROOT="$BASE_PATH/clients"
+TARGET_DIR="$DEPLOY_ROOT/$CLIENT_NAME"
 
 echo "🚀 Deploying AlamiaConnect for client: $CLIENT_NAME"
 echo "📂 Source: $SRC_DIR"
+echo "📂 Deploy Root: $DEPLOY_ROOT"
 echo "🎯 Target: $TARGET_DIR"
 echo "🌐 Port: $PORT"
 echo "🌿 Branch: $BRANCH"
@@ -66,8 +69,10 @@ mkdir -p "$TARGET_DIR/workspace"
 
 # 4. Generate/Update .env file for Docker Compose
 echo "⚙️ Updating stack .env file..."
+# Docker project names cannot contain slashes, so we sanitize it
+SAFE_PROJECT_SUFFIX=$(echo "$CLIENT_NAME" | tr '/' '-')
 cat <<EOF > "$TARGET_DIR/.env"
-PROJECT_NAME=alamia-$CLIENT_NAME
+PROJECT_NAME=alamia-$SAFE_PROJECT_SUFFIX
 APP_PORT=$PORT
 PMA_PORT=${PMA_PORT_OVERRIDE:-$((PORT + 10))}
 DB_PASSWORD=$DB_PASSWORD
