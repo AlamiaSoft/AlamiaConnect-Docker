@@ -25,5 +25,11 @@ If you prefer Cloudflare Tunnels over direct IP access:
 
 ---
 
+> [!CAUTION]
+> **Avoid Protocol Mismatch (502 Errors)**:
+> If you are using Cloudflare Tunnels, it is **highly recommended** to point the tunnel directly to the Docker port (e.g., `localhost:9000`) using the **HTTP** protocol.
+> 
+> Sending HTTPS traffic from a tunnel into a CloudPanel Reverse Proxy that then hits an HTTP Docker port often results in SSL handshake failures and 502 errors.
+
 > [!TIP]
-> Using CloudPanel as a reverse proxy allows you to easily manage logs and basic auth if needed, even for Docker-based sites.
+> Use CloudPanel for static sites and PHP-FPM sites. For Dockerized AlamiaConnect instances, use the Cloudflare Tunnel as the primary entry point.

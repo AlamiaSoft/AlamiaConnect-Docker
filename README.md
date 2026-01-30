@@ -4,7 +4,7 @@
 
 ## Introduction
 
-**AlamiaConnect** is a premium, hand-tailored CRM framework designed for modern businesses. Built on top of industry-leading open-source technologies like [Laravel](https://laravel.com) and [Vue.js](https://vuejs.org), it provides a robust foundation for customer lifecycle management.
+**AlamiaConnect** is a CRM framework designed for modern businesses. Built on top of industry-leading open-source technologies like [Laravel](https://laravel.com) and [Vue.js](https://vuejs.org), it provides a robust foundation for customer lifecycle management.
 
 **Empower your SME or Enterprise with a complete, open-source CRM solution.**
 
@@ -75,5 +75,14 @@ Log in to the admin panel using the default credentials:
 For support and documentation, please visit our official channels or reach out via our support portal.
 
 ---
-© 2026 AlamiaConnect. All rights reserved.
 
+### Documentation & Guides
+
+- [**Multi-Tenant Deployment (Gold Standard)**](docs/multi_tenant_deployment.md) - **Start Here!**
+- [**Next.js Frontend Blueprint**](docs/nextjs_deployment_preview.md) - Future proofing frontends.
+- [CloudPanel Setup](docs/cloudpanel_setup.md) - Secondary proxy config.
+- [CI/CD & GHCR Guide](docs/ghcr_portainer_setup.md) - How automation works.
+- [Planned Improvements](docs/improvements.md) - Roadmap for infra.
+
+---
+© 2026 AlamiaConnect. All rights reserved.
