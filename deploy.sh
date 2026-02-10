@@ -20,6 +20,12 @@ if [ -z "$CLIENT_NAME" ] || [ -z "$PORT" ] || [ -z "$DOMAIN_NAME" ]; then
     exit 1
 fi
 
+# Validate Port is a number
+if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
+    echo "❌ Error: Port must be a number. You provided: '$PORT'"
+    exit 1
+fi
+
 # --- Configuration ---
 SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 SRC_DIR=$(echo "$SRC_DIR" | tr -d '\r' | xargs)
@@ -29,6 +35,15 @@ BASE_PATH="$(dirname "$SRC_DIR")"
 DEPLOY_ROOT="$BASE_PATH/clients"
 TARGET_DIR="$DEPLOY_ROOT/$CLIENT_NAME"
 
+# Calculate relative path depth for Docker context
+# clients/demo (1 slash) -> needs ../../ (2 levels up to BASE_PATH)
+# clients/ktd/prod (2 slashes) -> needs ../../../ (3 levels up to BASE_PATH)
+SLASH_COUNT=$(echo "$CLIENT_NAME" | tr -cd '/' | wc -c)
+RELOAD_PATH=".."
+for i in $(seq 1 $((SLASH_COUNT + 1))); do
+    RELOAD_PATH="$RELOAD_PATH/.."
+done
+
 echo "🚀 Deploying AlamiaConnect for client: $CLIENT_NAME"
 echo "📂 Source: $SRC_DIR"
 echo "📂 Deploy Root: $DEPLOY_ROOT"
@@ -36,6 +51,7 @@ echo "🎯 Target: $TARGET_DIR"
 echo "🌐 Port: $PORT"
 echo "🌿 Branch: $BRANCH"
 echo "🔗 Domain: $DOMAIN_NAME"
+echo "🧩 Path depth: $((SLASH_COUNT + 2)) levels"
 
 # 1. Create target directory
 mkdir -p "$TARGET_DIR"
@@ -57,6 +73,10 @@ echo "📦 Copying Docker infrastructure..."
 cp "$SRC_DIR/Dockerfile" "$TARGET_DIR/"
 cp "$SRC_DIR/docker-compose.yml" "$TARGET_DIR/"
 cp "$SRC_DIR/entrypoint.sh" "$TARGET_DIR/"
+
+# DYNAMIC FIX: Correct the frontend build context in docker-compose.yml based on depth
+# We use a placeholder that matches what's in the repo
+sed -i "s|context: ../../../AlamiaConnect-Frontnd|context: $RELOAD_PATH/AlamiaConnect-Frontnd|" "$TARGET_DIR/docker-compose.yml"
 
 if [ -d "$SRC_DIR/.configs" ]; then
     echo "⚙️ Syncing configuration files..."
@@ -83,9 +103,9 @@ IMAGE_NAME=ghcr.io/alamiasoft/alamia-connect-docker:main
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://$DOMAIN_NAME
-SANCTUM_STATEFUL_DOMAINS=$(echo "$DOMAIN_NAME" | sed 's/ktd-crm/ktd/'),$DOMAIN_NAME
+SANCTUM_STATEFUL_DOMAINS=$(echo "$DOMAIN_NAME" | sed 's/-crm//'),$DOMAIN_NAME
 SESSION_DOMAIN=.$(echo "$DOMAIN_NAME" | cut -d'.' -f2-)
-CORS_ALLOWED_ORIGINS=https://$(echo "$DOMAIN_NAME" | sed 's/ktd-crm/ktd/'),https://$DOMAIN_NAME
+CORS_ALLOWED_ORIGINS=https://$(echo "$DOMAIN_NAME" | sed 's/-crm//'),https://$DOMAIN_NAME
 EOF
 
 # 5. Ensure Frontend Repository is up to date
