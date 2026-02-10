@@ -1,6 +1,6 @@
 # AlamiaConnect Multi-Tenant Deployment Guide (The Gold Standard)
 
-This document outlines the standardized architecture for deploying multiple isolated client and environment instances on a single VPS.
+This document outlines the standardized architecture for deploying multiple isolated client and environment instances on a single VPS, incorporating both the Laravel Backend and Next.js Frontend.
 
 ## 1. Directory Structure
 
@@ -11,50 +11,63 @@ Deployments must follow a hierarchical structure to maintain a clean VPS home di
 **Structure**:
 ```text
 /home/alamiaconnect/
+├── AlamiaConnect-Docker/      # Infrastructure & Deployment Scripts
+├── AlamiaConnect-Backend/     # Master Backend Source (Auto-pulled)
+├── AlamiaConnect-Frontnd/     # Master Frontend Source (Auto-pulled)
 └── clients/
-    ├── <client_name>/
-    │   ├── prod/          # Production Environment
-    │   └── demo/          # Demo/Testing Environment
-    └── nextjs-apps/       # (Coming Soon) Frontend instances
+    └── <client_name>/
+        └── <environment>/     # e.g., prod, demo, test
+            ├── .env           # Stack configuration
+            ├── docker-compose.yml
+            ├── workspace/     # Backend code/volume
+            └── .configs/      # Persistent DB & Configs
 ```
 
-## 2. Port Management Standardization (+10 Rule)
+## 2. Port Management Standardization
 
-To prevent port conflicts on the host while keeping client services logically grouped, we use the **+10 Offset Rule**.
+To prevent port conflicts while keeping client services logically grouped, we use the following Offset Rules:
 
-| Service | Port Assignment |
-| :--- | :--- |
-| **App (Apache/PHP)** | `PRIMARY_PORT` (e.g., 9000, 9100, 9200) |
-| **phpMyAdmin** | `PRIMARY_PORT + 10` (e.g., 9010, 9110, 9210) |
+| Service | Port Mapping | Example (Base: 9300) |
+| :--- | :--- | :--- |
+| **Backend API** | `BASE_PORT` | `9300` |
+| **phpMyAdmin** | `BASE_PORT + 10` | `9310` |
+| **Frontend (Next.js)**| `BASE_PORT + 20` | `9320` |
 
 > [!IMPORTANT]
-> Always ensure `PRIMARY_PORT` values are at least 100 digits apart for different clients to leave room for future services (e.g., App 1 starts at 9000, App 2 at 9100).
+> Always ensure `BASE_PORT` values are at least 100 digits apart for different clients (e.g., Client A starts at 9000, Client B at 9100).
 
-## 3. Deployment Command
+## 3. Data Safety & Initialization
 
-Use the `deploy.sh` script to automate the creation of these instances.
+Our infrastructure includes a **Safety Switch** to prevent data loss during container restarts or infrastructure updates.
+
+*   **Fresh Install**: If `storage/installed` does not exist, the `alamia:install-auto` command runs (Migrate Fresh + Seed).
+*   **Update/Restart**: If the app is already installed, the container runs standard `migrate --force` to apply schema changes while preserving all client data.
+
+## 4. Deployment Command
+
+The `deploy.sh` script handles repository syncing for both Backend and Frontend, generates the environment configuration, and starts the stack.
 
 ```bash
-# General Usage:
-./deploy.sh <client>/<env> <port> <branch> <domain>
+# Usage:
+./deploy.sh <client>/<env> <base_port> <backend_branch> <domain_name>
 
-# Example (KTD Demo):
-./deploy.sh ktd/demo 9100 ktd-main demo.kausartrade.com
+# Example (KTD Production):
+./deploy.sh ktd/prod 9300 ktd-production ktd-crm.alamiaconnect.com
 ```
 
-## 4. Network Path & Routing (Cloudflare Tunnels)
+## 5. Network & CORS Logic
 
-For modern Docker deployments, we bypass the host Reverse Proxy (like CloudPanel) and connect the Cloudflare Tunnel directly to the Docker port.
+The deployment script automatically handles Cross-Origin Resource Sharing (CORS) and Sanctum authentication between the two subdomains:
 
-**Correct Route**:
-`Cloudflare Edge` -> `Cloudflare Tunnel (on VPS)` -> `http://localhost:<PRIMARY_PORT>`
+1.  **Backend Host**: `ktd-crm.alamiaconnect.com`
+2.  **Frontend Host**: `ktd.alamiaconnect.com` (Derived by replacing `-crm` with nothing)
+3.  **CORS Allowed Origins**: Automatically set to allow the frontend subdomain to communicate with the backend.
+4.  **Sanctum Stateful Domains**: Configured to trust the frontend for cookie-based authentication.
+5.  **Session Domain**: Set to the parent domain (e.g., `.alamiaconnect.com`) to allow cookie sharing across subdomains.
 
-**Why not CloudPanel Reverse Proxy?**
-Bypassing CloudPanel eliminates potential SSL handshake failures (502 errors) and protocol mismatches, as the Tunnel handles encryption all the way to the host.
+## 6. Summary of Best Practices
 
-## 5. Summary of Best Practices
-
-1. **Isolation**: Every client/env is a separate Docker stack with its own DB, Redis, and files.
-2. **Sanitization**: The script replaces slashes with hyphens in Docker project names automatically.
-3. **Persistance**: Database files are stored in `.configs/mysql-data` within the target client directory.
-4. **Security**: Each deployment gets a unique auto-generated `DB_PASSWORD`.
+1.  **Unified Stack**: Every client/env is a complete stack with Backend, Frontend, DB, and Redis.
+2.  **Auto-Sync**: The script pulls the latest code from both repos before starting the build.
+3.  **Standalone Builds**: The Frontend uses Next.js `standalone` mode in `Dockerfile.prod` for maximum VPS performance.
+4.  **Security**: Each deployment gets a unique auto-generated `DB_PASSWORD`.

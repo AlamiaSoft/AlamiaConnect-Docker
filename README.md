@@ -10,12 +10,11 @@
 
 ---
 
-### Features
-
 *   **Customer Lifecycle Management**: Seamlessly manage leads, customers, and opportunities.
+*   **Unified Next.js & Laravel Architecture**: A modern, high-performance decoupled architecture.
 *   **Dockerized Environment**: Quick and consistent deployment using Docker.
 *   **Highly Extensible**: Modular architecture allows for easy customization.
-*   **Modern Tech Stack**: Laravel 11+, PHP 8.3, Vue.js, and MySQL.
+*   **Modern Tech Stack**: Laravel 10+, PHP 8.4, Next.js 15, and MySQL.
 
 ---
 
