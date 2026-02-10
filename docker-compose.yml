@@ -1,5 +1,3 @@
-version: "3.1"
-
 services:
   app:
     build:
@@ -60,7 +58,7 @@ services:
 
   frontend:
     build:
-      context: ../../AlamiaConnect-Frontnd # Adjusted to point to the frontend repo relative to client dir
+      context: ../../../AlamiaConnect-Frontnd # Corrected: 3 levels up from clients/ktd/prod
       dockerfile: Dockerfile.prod
       args:
         NEXT_PUBLIC_API_URL: ${APP_URL}/api/v1
