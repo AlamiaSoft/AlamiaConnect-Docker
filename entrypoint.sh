@@ -22,6 +22,8 @@ if [ ! -d "$WORKSPACE_DIR/.git" ]; then
     git clone -b "$REPO_BRANCH" "$REPO_URL" "$WORKSPACE_DIR"
 else
     echo "Updating backend repository..."
+    # Discard any local changes that might have occurred (e.g. from published configs or permission changes)
+    git -C "$WORKSPACE_DIR" reset --hard
     git -C "$WORKSPACE_DIR" pull origin "$REPO_BRANCH"
 fi
 
