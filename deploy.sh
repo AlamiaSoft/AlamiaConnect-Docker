@@ -83,6 +83,8 @@ IMAGE_NAME=ghcr.io/alamiasoft/alamia-connect-docker:main
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://$DOMAIN_NAME
+SANCTUM_STATEFUL_DOMAINS=$(echo "$DOMAIN_NAME" | sed 's/ktd-crm/ktdn/'),$DOMAIN_NAME
+SESSION_DOMAIN=.$(echo "$DOMAIN_NAME" | cut -d'.' -f2-)
 EOF
 
 # 5. Ensure Frontend Repository is up to date

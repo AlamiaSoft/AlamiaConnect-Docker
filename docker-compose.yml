@@ -18,6 +18,8 @@ services:
       - DB_HOST=db
       - DB_DATABASE=alamiaconnect
       - DB_PASSWORD=${DB_PASSWORD:-root}
+      - SANCTUM_STATEFUL_DOMAINS=${SANCTUM_STATEFUL_DOMAINS}
+      - SESSION_DOMAIN=${SESSION_DOMAIN}
     ports:
       - ${APP_PORT:-9001}:80
     volumes:
