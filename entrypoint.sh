@@ -100,8 +100,14 @@ if [ $COUNT -eq $MAX_TRIES ]; then
     exit 1
 fi
 
-echo "Running AlamiaConnect specialized installer..."
-php artisan alamia:install-auto --force
+if [ ! -f "storage/installed" ]; then
+    echo "Running AlamiaConnect specialized installer..."
+    php artisan alamia:install-auto --force
+else
+    echo "AlamiaConnect already installed. Skipping installer to preserve data."
+    echo "Running migrations only..."
+    php artisan migrate --force
+fi
 
 echo "Regenerating API Documentation..."
 php artisan l5-swagger:generate
