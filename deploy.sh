@@ -75,6 +75,7 @@ cat <<EOF > "$TARGET_DIR/.env"
 PROJECT_NAME=alamia-$SAFE_PROJECT_SUFFIX
 APP_PORT=$PORT
 PMA_PORT=${PMA_PORT_OVERRIDE:-$((PORT + 10))}
+FRONTEND_PORT=$((PORT + 20))
 DB_PASSWORD=$DB_PASSWORD
 BACKEND_REPO_URL=https://github.com/AlamiaSoft/AlamiaConnect-Backend
 BACKEND_REPO_BRANCH=$BRANCH
@@ -84,7 +85,17 @@ APP_DEBUG=false
 APP_URL=https://$DOMAIN_NAME
 EOF
 
-# 5. Deploy
+# 5. Ensure Frontend Repository is up to date
+FRONTEND_DIR="$BASE_PATH/AlamiaConnect-Frontnd"
+if [ ! -d "$FRONTEND_DIR" ]; then
+    echo "📂 Cloning Frontend repository..."
+    git clone https://github.com/AlamiaSoft/AlamiaConnect-Frontnd "$FRONTEND_DIR"
+else
+    echo "📂 Updating Frontend repository..."
+    git -C "$FRONTEND_DIR" pull origin main
+fi
+
+# 6. Deploy
 echo "🚢 Starting Docker containers..."
 cd "$TARGET_DIR"
 
