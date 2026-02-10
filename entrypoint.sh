@@ -48,6 +48,7 @@ echo "Syncing environment variables with .env..."
 [ ! -z "$APP_DEBUG" ] && sed -i "s/^APP_DEBUG=.*/APP_DEBUG=$APP_DEBUG/" "$WORKSPACE_DIR/.env"
 [ ! -z "$SANCTUM_STATEFUL_DOMAINS" ] && sed -i "s/^SANCTUM_STATEFUL_DOMAINS=.*/SANCTUM_STATEFUL_DOMAINS=$SANCTUM_STATEFUL_DOMAINS/" "$WORKSPACE_DIR/.env"
 [ ! -z "$SESSION_DOMAIN" ] && sed -i "s/^SESSION_DOMAIN=.*/SESSION_DOMAIN=$SESSION_DOMAIN/" "$WORKSPACE_DIR/.env"
+[ ! -z "$CORS_ALLOWED_ORIGINS" ] && sed -i "s/^CORS_ALLOWED_ORIGINS=.*/CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS/" "$WORKSPACE_DIR/.env"
 
 # Logic for "Local Network" prompt fix:
 # Often triggered by Echo server Defaults. Force to log if unset to prevent broadcast discovery triggers.

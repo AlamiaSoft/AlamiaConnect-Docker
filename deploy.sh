@@ -85,6 +85,7 @@ APP_DEBUG=false
 APP_URL=https://$DOMAIN_NAME
 SANCTUM_STATEFUL_DOMAINS=$(echo "$DOMAIN_NAME" | sed 's/ktd-crm/ktdn/'),$DOMAIN_NAME
 SESSION_DOMAIN=.$(echo "$DOMAIN_NAME" | cut -d'.' -f2-)
+CORS_ALLOWED_ORIGINS=https://$(echo "$DOMAIN_NAME" | sed 's/ktd-crm/ktdn/'),https://$DOMAIN_NAME
 EOF
 
 # 5. Ensure Frontend Repository is up to date
